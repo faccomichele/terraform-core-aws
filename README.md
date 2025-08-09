@@ -88,7 +88,9 @@ terraform {
     bucket     = "${aws_s3_bucket.terraform_state.id}"
     key        = "CHANGE_ME/terraform.tfstate"
     region     = "${data.aws_region.current.name}"
-    role_arn   = "${aws_iam_role.terraform_state_role.arn}"
+    assume_role = {
+      role_arn   = "${aws_iam_role.terraform_state_role.arn}"
+    }
     encrypt    = true
   }
 }
