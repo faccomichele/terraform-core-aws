@@ -7,8 +7,10 @@ After deploying the CloudFormation stack, you can use the created infrastructure
 Get the backend configuration from AWS SSM Parameter Store:
 
 ```bash
+# Replace {ProjectName} and {Environment} with your stack's parameter values
+# For example: /terraform-core-aws/dev/backend_configuration_hcl
 aws ssm get-parameter \
-  --name /terraform-core/backend_configuration_hcl \
+  --name /{ProjectName}/{Environment}/backend_configuration_hcl \
   --with-decryption \
   --query 'Parameter.Value' \
   --output text
@@ -103,6 +105,33 @@ Then initialize with:
 ```bash
 terraform init -backend-config=backend-config.tfbackend
 ```
+
+### Attaching the SSM Read Policy
+
+- This CloudFormation stack creates a standalone managed policy named `${ProjectName}-ssm-read-${Environment}` (resource `SSMParameterReadPolicy`) which grants `ssm:GetParameter` and `ssm:GetParameters` for the parameter `/${ProjectName}/${Environment}/backend_configuration_hcl`.
+
+- To allow a deployment role (for example the role used by your CI or by a peer Terraform repo) to retrieve the backend configuration from SSM, attach this managed policy to that role. Example using the AWS CLI (replace placeholders):
+
+```bash
+aws iam attach-role-policy \
+  --role-name <deployment-role-name> \
+  --policy-arn arn:aws:iam::<account-id>:policy/${ProjectName}-ssm-read-<env>
+```
+
+- In Terraform you can attach it using a `data` lookup and `aws_iam_role_policy_attachment`:
+
+```hcl
+data "aws_iam_policy" "ssm_read" {
+  name = "${ProjectName}-ssm-read-${Environment}"
+}
+
+resource "aws_iam_role_policy_attachment" "attach_ssm_read" {
+  role       = aws_iam_role.deployment_role.name
+  policy_arn = data.aws_iam_policy.ssm_read.arn
+}
+```
+
+- Attaching this policy (or granting equivalent SSM read permissions) ensures peer repositories can always pull the updated backend configuration from SSM.
 
 ## Step 3: Initialize Terraform
 
