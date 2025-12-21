@@ -1,6 +1,18 @@
 # Terraform State Management Infrastructure
 
-This Terraform configuration creates the foundational infrastructure for managing Terraform
+This repository provides infrastructure for managing Terraform state files in AWS. It includes both **Terraform** and **CloudFormation** implementations.
+
+## 📋 Available Implementations
+
+### 🔹 Terraform (Original)
+The Terraform configuration creates S3 buckets, IAM roles, and SSM parameters for state management.
+See the `.tf` files in the root directory.
+
+### 🔹 CloudFormation (Converted)
+Complete CloudFormation templates with the same functionality as the Terraform version.
+See the `cloudformation/` directory for templates and deployment instructions.
+
+👉 **[CloudFormation Documentation](./cloudformation/README.md)** - Detailed guide for CloudFormation deployment
 
 ## Features
 

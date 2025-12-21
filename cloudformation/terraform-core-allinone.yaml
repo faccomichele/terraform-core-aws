@@ -1,0 +1,211 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Terraform State Management Infrastructure - All-in-one template (S3, IAM, and SSM in a single stack)'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Organization
+          - Environment
+    ParameterLabels:
+      ProjectName:
+        default: Project Name
+      Organization:
+        default: Organization Name
+      Environment:
+        default: Environment/Workspace
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project
+    Default: terraform-core-aws
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+  
+  Organization:
+    Type: String
+    Description: Name of the organization
+    Default: faccomichele
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+  
+  Environment:
+    Type: String
+    Description: Environment/Workspace (dev, stg, prod)
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+    Default: dev
+
+Resources:
+  # S3 bucket for Terraform state files
+  TerraformStateBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-state-files-${Environment}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: terraform-state-files-lifecycle
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 30
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: RepositoryPath
+          Value: '.'
+        - Key: RepositoryFile
+          Value: cloudformation/terraform-core-allinone.yaml
+        - Key: Name
+          Value: !Sub '${ProjectName}-state-files-${Environment}'
+        - Key: Description
+          Value: S3 bucket for storing Terraform state files
+
+  # IAM role for Terraform state access
+  TerraformStateRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-state-files-${Environment}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS: !Ref AWS::AccountId
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: RepositoryPath
+          Value: '.'
+        - Key: RepositoryFile
+          Value: cloudformation/terraform-core-allinone.yaml
+        - Key: Description
+          Value: IAM role for accessing Terraform state files
+
+  # IAM policy for Terraform state access
+  TerraformStatePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: terraform-state-files-policy
+      Roles:
+        - !Ref TerraformStateRole
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: ListObjectsInBucket
+            Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource: !GetAtt TerraformStateBucket.Arn
+          - Sid: AllObjectActions
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource: !Sub '${TerraformStateBucket.Arn}/*'
+
+  # SSM parameter for backend configuration
+  BackendConfigurationParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Name: /terraform-core/backend_configuration_hcl
+      Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
+      Type: String
+      Tier: Advanced
+      Value: !Sub |
+        terraform {
+          backend "s3" {
+            bucket        = "${TerraformStateBucket}"
+            key           = "CHANGE_ME/terraform.tfstate"
+            region        = "${AWS::Region}"
+            assume_role = {
+              role_arn      = "${TerraformStateRole.Arn}"
+            }
+            encrypt       = true
+            use_lockfile  = true
+          }
+        }
+      Tags:
+        Project: !Ref ProjectName
+        Organization: !Ref Organization
+        Environment: !Ref Environment
+        RepositoryURL: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        Automation: CloudFormation
+        RepositoryPath: '.'
+        RepositoryFile: cloudformation/terraform-core-allinone.yaml
+        Name: /terraform-core/backend_configuration_hcl
+        Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
+
+Outputs:
+  StateBucketName:
+    Description: Name of the S3 bucket for Terraform state files
+    Value: !Ref TerraformStateBucket
+    Export:
+      Name: !Sub '${AWS::StackName}-StateBucketName'
+  
+  StateBucketArn:
+    Description: ARN of the S3 bucket for Terraform state files
+    Value: !GetAtt TerraformStateBucket.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-StateBucketArn'
+  
+  StateRoleArn:
+    Description: ARN of the IAM role for Terraform state access
+    Value: !GetAtt TerraformStateRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}-StateRoleArn'
+  
+  StateRoleName:
+    Description: Name of the IAM role for Terraform state access
+    Value: !Ref TerraformStateRole
+    Export:
+      Name: !Sub '${AWS::StackName}-StateRoleName'
+  
+  BackendConfigurationParameterName:
+    Description: Name of the SSM parameter storing the backend configuration
+    Value: !Ref BackendConfigurationParameter
+    Export:
+      Name: !Sub '${AWS::StackName}-BackendConfigParameterName'
+  
+  BackendConfigurationHCL:
+    Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
+    Value: !GetAtt BackendConfigurationParameter.Value

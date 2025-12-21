@@ -1,0 +1,14 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "terraform-core-aws"
+  },
+  {
+    "ParameterKey": "Organization",
+    "ParameterValue": "faccomichele"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  }
+]
