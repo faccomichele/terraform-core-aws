@@ -2,6 +2,13 @@
 
 This directory contains CloudFormation templates converted from the original Terraform configuration. These templates create the foundational infrastructure for managing Terraform state files in AWS.
 
+## 📚 Documentation
+
+- **[QUICKSTART.md](./QUICKSTART.md)** - Quick commands to get started immediately
+- **[DEPLOYMENT-CHECKLIST.md](./DEPLOYMENT-CHECKLIST.md)** - Complete deployment checklist
+- **[TERRAFORM-TO-CFN-MAPPING.md](./TERRAFORM-TO-CFN-MAPPING.md)** - Detailed Terraform to CloudFormation conversion reference
+- **README.md** (this file) - Comprehensive guide
+
 ## Overview
 
 The templates create:
