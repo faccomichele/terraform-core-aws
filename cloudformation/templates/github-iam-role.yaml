@@ -129,7 +129,7 @@ Resources:
         - Key: Automation
           Value: CloudFormation
         - Key: RepositoryFile
-          Value: github-iam-role-template.yaml
+          Value: github-iam-role.yaml
         - Key: Description
           Value: !Sub 'IAM role for GitHub Actions in ${Organization}/${RepositoryName}'
 
