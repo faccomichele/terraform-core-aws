@@ -119,7 +119,7 @@ jobs:
       - name: Get Terraform Backend Config
         run: |
           aws ssm get-parameter \
-            --name /terraform-core/backend_configuration_hcl \
+            --name "/${PROJECT_NAME}/${ENVIRONMENT}/backend_configuration_hcl" \
             --query 'Parameter.Value' \
             --output text
 ```
