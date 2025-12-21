@@ -7,8 +7,10 @@ After deploying the CloudFormation stack, you can use the created infrastructure
 Get the backend configuration from AWS SSM Parameter Store:
 
 ```bash
+# Replace {ProjectName} and {Environment} with your stack's parameter values
+# For example: /terraform-core-aws/dev/backend_configuration_hcl
 aws ssm get-parameter \
-  --name /terraform-core/backend_configuration_hcl \
+  --name /{ProjectName}/{Environment}/backend_configuration_hcl \
   --with-decryption \
   --query 'Parameter.Value' \
   --output text
@@ -106,7 +108,7 @@ terraform init -backend-config=backend-config.tfbackend
 
 ### Attaching the SSM Read Policy
 
-- This CloudFormation stack creates a standalone managed policy named `${ProjectName}-ssm-read-${Environment}` (resource `SSMParameterReadPolicy`) which grants `ssm:GetParameter` and `ssm:GetParameters` for the parameter `/terraform-core/backend_configuration_hcl`.
+- This CloudFormation stack creates a standalone managed policy named `${ProjectName}-ssm-read-${Environment}` (resource `SSMParameterReadPolicy`) which grants `ssm:GetParameter` and `ssm:GetParameters` for the parameter `/${ProjectName}/${Environment}/backend_configuration_hcl`.
 
 - To allow a deployment role (for example the role used by your CI or by a peer Terraform repo) to retrieve the backend configuration from SSM, attach this managed policy to that role. Example using the AWS CLI (replace placeholders):
 
