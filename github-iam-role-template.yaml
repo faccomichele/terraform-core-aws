@@ -4,6 +4,10 @@ Description: 'GitHub Actions IAM Role - Template for deploying repository-specif
 # Stack Name: <repo-name>-github-role
 
 # DEPLOYMENT INSTRUCTIONS:
+# PREREQUISITE: The GitHub OIDC provider must be deployed first using the github-identity-provider.yaml template.
+#               This creates the shared OIDC provider that this role will reference.
+#               Deploy it with stack name 'github-identity-provider' (or update OIDCProviderStackName parameter below).
+# 
 # 1. Copy this template to your target repository
 # 2. Update the RepositoryName parameter default to match your repository name
 # 3. Optionally adjust Environment parameter if needed
