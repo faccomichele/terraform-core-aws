@@ -118,8 +118,10 @@ jobs:
           
       - name: Get Terraform Backend Config
         run: |
+          # Replace <ProjectName> and <Environment> with your stack's parameter values
+          # For example: /terraform-core-aws/dev/backend_configuration_hcl
           aws ssm get-parameter \
-            --name /terraform-core/backend_configuration_hcl \
+            --name /<ProjectName>/<Environment>/backend_configuration_hcl \
             --query 'Parameter.Value' \
             --output text
 ```
