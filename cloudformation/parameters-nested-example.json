@@ -1,0 +1,18 @@
+[
+  {
+    "ParameterKey": "ProjectName",
+    "ParameterValue": "terraform-core-aws"
+  },
+  {
+    "ParameterKey": "Organization",
+    "ParameterValue": "faccomichele"
+  },
+  {
+    "ParameterKey": "Environment",
+    "ParameterValue": "dev"
+  },
+  {
+    "ParameterKey": "TemplateBaseURL",
+    "ParameterValue": "http://your-cfn-templates-bucket.s3.amazonaws.com/cloudformation/nested"
+  }
+]

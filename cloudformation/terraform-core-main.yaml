@@ -1,0 +1,170 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Terraform State Management Infrastructure - Main Stack with nested stacks for S3, IAM, and SSM'
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: Project Configuration
+        Parameters:
+          - ProjectName
+          - Organization
+          - Environment
+      - Label:
+          default: Nested Stack Configuration
+        Parameters:
+          - TemplateBaseURL
+    ParameterLabels:
+      ProjectName:
+        default: Project Name
+      Organization:
+        default: Organization Name
+      Environment:
+        default: Environment/Workspace
+      TemplateBaseURL:
+        default: S3 URL Base for Nested Templates
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project
+    Default: terraform-core-aws
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+  
+  Organization:
+    Type: String
+    Description: Name of the organization
+    Default: faccomichele
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+  
+  Environment:
+    Type: String
+    Description: Environment/Workspace (dev, stg, prod)
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+    Default: dev
+  
+  TemplateBaseURL:
+    Type: String
+    Description: HTTP URL base path for nested CloudFormation templates (e.g., http://bucket-name.s3.amazonaws.com/cloudformation/nested)
+    AllowedPattern: ^http://.*
+    ConstraintDescription: Must be an HTTP URL pointing to S3
+
+Resources:
+  # Nested stack for S3 bucket
+  S3Stack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub '${TemplateBaseURL}/s3-state-bucket.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Organization: !Ref Organization
+        Environment: !Ref Environment
+        AccountId: !Ref AWS::AccountId
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: StackType
+          Value: Nested-S3
+  
+  # Nested stack for IAM role and policy
+  IAMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub '${TemplateBaseURL}/iam-state-role.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Organization: !Ref Organization
+        Environment: !Ref Environment
+        AccountId: !Ref AWS::AccountId
+        StateBucketArn: !GetAtt S3Stack.Outputs.BucketArn
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: StackType
+          Value: Nested-IAM
+  
+  # Nested stack for SSM parameter
+  SSMStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub '${TemplateBaseURL}/ssm-backend-config.yaml'
+      Parameters:
+        ProjectName: !Ref ProjectName
+        Organization: !Ref Organization
+        Environment: !Ref Environment
+        StateBucketName: !GetAtt S3Stack.Outputs.BucketName
+        StateRoleArn: !GetAtt IAMStack.Outputs.RoleArn
+        Region: !Ref AWS::Region
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: StackType
+          Value: Nested-SSM
+
+Outputs:
+  StateBucketName:
+    Description: Name of the S3 bucket for Terraform state files
+    Value: !GetAtt S3Stack.Outputs.BucketName
+    Export:
+      Name: !Sub '${AWS::StackName}-StateBucketName'
+  
+  StateBucketArn:
+    Description: ARN of the S3 bucket for Terraform state files
+    Value: !GetAtt S3Stack.Outputs.BucketArn
+    Export:
+      Name: !Sub '${AWS::StackName}-StateBucketArn'
+  
+  StateRoleArn:
+    Description: ARN of the IAM role for Terraform state access
+    Value: !GetAtt IAMStack.Outputs.RoleArn
+    Export:
+      Name: !Sub '${AWS::StackName}-StateRoleArn'
+  
+  StateRoleName:
+    Description: Name of the IAM role for Terraform state access
+    Value: !GetAtt IAMStack.Outputs.RoleName
+    Export:
+      Name: !Sub '${AWS::StackName}-StateRoleName'
+  
+  BackendConfigurationParameterName:
+    Description: Name of the SSM parameter storing the backend configuration
+    Value: !GetAtt SSMStack.Outputs.ParameterName
+    Export:
+      Name: !Sub '${AWS::StackName}-BackendConfigParameterName'
+  
+  BackendConfigurationHCL:
+    Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
+    Value: !GetAtt SSMStack.Outputs.ParameterValue
