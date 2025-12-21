@@ -67,7 +67,7 @@ Parameters:
   OIDCProviderStackName:
     Type: String
     Description: Name of the stack that deployed the GitHub OIDC provider
-    Default: github-oidc-provider
+    Default: github-identity-provider
   
   SSMParameterReadPolicyName:
     Type: String
