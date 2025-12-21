@@ -51,7 +51,7 @@ This consistent naming allows other CloudFormation stacks to reliably import val
 
 - **Terraform uses the created IAM role**: Terraform projects that use this backend should assume the IAM role created by this stack (the role ARN is exported as `StateRoleArn`). The role provides the permissions required to read, write and manage state files in the S3 bucket.
 
-- **SSM read access is a standalone managed policy**: A standalone managed policy named `${ProjectName}-ssm-read-${Environment}` (resource `SSMParameterReadPolicy`) grants `ssm:GetParameter` / `ssm:GetParameters` only for the backend parameter `/terraform-core/backend_configuration_hcl`. Peer repositories (the Terraform-based repos that deploy your applications or infrastructure) must attach this managed policy to the IAM role they use for deployments (or otherwise grant the equivalent SSM read permissions) so they can always retrieve the current backend configuration from SSM.
+- **SSM read access is a standalone managed policy**: A standalone managed policy named `${ProjectName}-ssm-read-${Environment}` (resource `SSMParameterReadPolicy`) grants `ssm:GetParameter` / `ssm:GetParameters` only for the backend parameter `/${ProjectName}/${Environment}/backend_configuration_hcl` (for example, `/terraform-core-aws/dev/backend_configuration_hcl`). Peer repositories (the Terraform-based repos that deploy your applications or infrastructure) must attach this managed policy to the IAM role they use for deployments (or otherwise grant the equivalent SSM read permissions) so they can always retrieve the current backend configuration from SSM.
 
 ## Template Options
 
