@@ -362,7 +362,8 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
       ManagedPolicyArns:
         # REQUIRED: SSM parameter read policy for Terraform backend config
-        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/terraform-core-aws-ssm-read-${Environment}'
+        # Replace <ProjectName> with the ProjectName parameter from your terraform-core-allinone.yaml stack
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/<ProjectName>-ssm-read-${Environment}'
         # Add your application-specific policies here
         - arn:aws:iam::aws:policy/ReadOnlyAccess  # Example
 
