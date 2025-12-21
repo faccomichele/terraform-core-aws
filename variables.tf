@@ -1,17 +1,13 @@
 variable "project_name" {
   description = "Name of the project"
   type        = string
-  default     = "terraform-core"
+  default     = "terraform-core-aws"
 }
 
-variable "repository_url" {
-  description = "URL of the Git repository"
+variable "organization" {
+  description = "Name of the organization"
   type        = string
-  default     = "https://github.com/faccomichele/terraform-core"
-  validation {
-    condition     = can(regex("^https://.*${var.project_name}.*", var.repository_url))
-    error_message = "The repository_url must start with 'https://' and contain the project name ('${var.project_name}')."
-  }
+  default     = "faccomichele"
 }
 
 variable "import_existing_resources" {

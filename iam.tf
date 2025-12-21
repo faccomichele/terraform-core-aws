@@ -16,9 +16,13 @@ resource "aws_iam_role" "terraform_state_role" {
 }
 ASSUME_POLICY
 
-  tags = {
-    Description = "IAM role for accessing Terraform state files"
-  }
+  tags = merge(
+    local.tags,
+    {
+      RepositoryFile = "iam.tf"
+      Description    = "IAM role for accessing Terraform state files"
+    }
+  )
 }
 
 # IAM policy for Terraform state access

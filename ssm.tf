@@ -17,4 +17,12 @@ terraform {
 }
 EOT
 	overwrite   = true
+  tags = merge(
+    local.tags,
+    {
+      RepositoryFile = "ssm.tf"
+      Name           = "/terraform-core/backend_configuration_hcl"
+      Description    = "Backend configuration in HCL format for copy-paste into other Terraform configurations"
+    }
+  )
 }

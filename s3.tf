@@ -1,12 +1,16 @@
 # S3 bucket for storing Terraform state files
 resource "aws_s3_bucket" "terraform_state" {
-  bucket_prefix = "${var.project_name}-state-files-${terraform.workspace}-"
+  bucket_prefix = "${var.project_name}-state-files-${terraform.workspace}-${data.aws_caller_identity.current.account_id}-"
   force_destroy = false
 
-  tags = {
-    Name        = "${var.project_name}-state-files-${terraform.workspace}"
-    Description = "S3 bucket for storing Terraform state files"
-  }
+  tags = merge(
+    local.tags,
+    {
+      RepositoryFile = "s3.tf"
+      Name           = "${var.project_name}-state-files-${terraform.workspace}"
+      Description    = "S3 bucket for storing Terraform state files"
+    }
+  )
 }
 
 # S3 bucket versioning

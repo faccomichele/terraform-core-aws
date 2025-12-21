@@ -1,38 +1,6 @@
 # Terraform State Management Infrastructure
 
-This Terraform configuration creates the foundational infrastructure for managing Terra### Import Script Options
-
-```bash
-# Direct Python execution
-python imports/import_resources.py [OPTIONS]
-
-# Windows wrapper script
-imports/import_resources.bat [OPTIONS]
-
-# Ubuntu/Linux wrapper script  
-./imports/import_resources.sh [OPTIONS]
-
-Options:
-  --dry-run              Show what would be imported without doing it
-  --workspace WORKSPACE  Specify workspace (default: current terraform workspace)
-  --profile PROFILE      AWS profile to use (default: mfa)
-  --help                Show help message
-```
-
-### Platform-Specific Notes
-
-**Ubuntu/Linux Users:**
-- Make the script executable: `chmod +x imports/import_resources.sh`
-- Ensure Python virtual environment is created with: `python3 -m venv .venv`
-- Activate virtual environment: `source .venv/bin/activate`
-
-**Windows Users:**
-- The batch script automatically uses the correct Python executable path
-- Ensure virtual environment is created with: `python -m venv .venv`files across your project. It includes:
-
-- **S3 Bucket**: Encrypted bucket for storing Terraform state files
-- **IAM Role**: Role that can be assumed to access the state bucket with read/write permissions
-- **Security**: Public access blocked, versioning enabled, lifecycle rules for cost optimization
+This Terraform configuration creates the foundational infrastructure for managing Terraform
 
 ## Features
 
@@ -171,6 +139,20 @@ Options:
   --profile PROFILE      AWS profile to use (default: mfa)
   --help                Show help message
 ```
+### Platform-Specific Notes
+
+**Ubuntu/Linux Users:**
+- Make the script executable: `chmod +x imports/import_resources.sh`
+- Ensure Python virtual environment is created with: `python3 -m venv .venv`
+- Activate virtual environment: `source .venv/bin/activate`
+
+**Windows Users:**
+- The batch script automatically uses the correct Python executable path
+- Ensure virtual environment is created with: `python -m venv .venv`files across your project. It includes:
+
+- **S3 Bucket**: Encrypted bucket for storing Terraform state files
+- **IAM Role**: Role that can be assumed to access the state bucket with read/write permissions
+- **Security**: Public access blocked, versioning enabled, lifecycle rules for cost optimization
 
 ## Outputs
 
