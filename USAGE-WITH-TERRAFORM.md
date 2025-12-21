@@ -7,10 +7,10 @@ After deploying the CloudFormation stack, you can use the created infrastructure
 Get the backend configuration from AWS SSM Parameter Store:
 
 ```bash
-# Replace <ProjectName> and <Environment> with your stack's parameter values
+# Replace {ProjectName} and {Environment} with your stack's parameter values
 # For example: /terraform-core-aws/dev/backend_configuration_hcl
 aws ssm get-parameter \
-  --name /<ProjectName>/<Environment>/backend_configuration_hcl \
+  --name /{ProjectName}/{Environment}/backend_configuration_hcl \
   --with-decryption \
   --query 'Parameter.Value' \
   --output text

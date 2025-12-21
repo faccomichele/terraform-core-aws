@@ -309,10 +309,10 @@ After deployment, retrieve the backend configuration from SSM:
 
 ```bash
 # Retrieve the backend configuration
-# Replace <ProjectName> and <Environment> with your stack's parameter values
+# Replace {ProjectName} and {Environment} with your stack's parameter values
 # For example: /terraform-core-aws/dev/backend_configuration_hcl
 aws ssm get-parameter \
-  --name /<ProjectName>/<Environment>/backend_configuration_hcl \
+  --name /{ProjectName}/{Environment}/backend_configuration_hcl \
   --with-decryption \
   --query 'Parameter.Value' \
   --output text
@@ -362,8 +362,8 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
       ManagedPolicyArns:
         # REQUIRED: SSM parameter read policy for Terraform backend config
-        # Replace <ProjectName> with the ProjectName parameter from your terraform-core-allinone.yaml stack
-        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/<ProjectName>-ssm-read-${Environment}'
+        # Replace {ProjectName} with the ProjectName parameter from your terraform-core-allinone.yaml stack
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/{ProjectName}-ssm-read-${Environment}'
         # Add your application-specific policies here
         - arn:aws:iam::aws:policy/ReadOnlyAccess  # Example
 
