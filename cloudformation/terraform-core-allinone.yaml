@@ -152,7 +152,7 @@ Resources:
             Action:
               - ssm:GetParameter
               - ssm:GetParameters
-            Resource: !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/terraform-core/${Environment}/backend_configuration_hcl'
+            Resource: !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/terraform-core-aws/${Environment}/backend_configuration_hcl'
 
   # SSM parameter for backend configuration
   BackendConfigurationParameter:
