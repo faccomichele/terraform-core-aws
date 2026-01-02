@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'GitHub Actions IAM Role - Template for deploying repository-specific GitHub Actions roles that assume the shared OIDC provider'
 
-# Stack Name: <repo-name>-github-role
+# Stack Name: github-role-for-<repo-name>
 
 # DEPLOYMENT INSTRUCTIONS:
 # PREREQUISITE: The GitHub OIDC provider must be deployed first using the github-identity-provider.yaml template.
@@ -9,10 +9,10 @@ Description: 'GitHub Actions IAM Role - Template for deploying repository-specif
 #               Deploy it with stack name 'github-identity-provider' (or update OIDCProviderStackName parameter below).
 # 
 # 1. Copy this template to your target repository
-# 2. Update the RepositoryName parameter default to match your repository name
+# 2. Update the ProjectName parameter default to match your repository name
 # 3. Optionally adjust Environment parameter if needed
 # 4. Add additional managed policies or inline policies as required for your application
-# 5. Deploy with: aws cloudformation create-stack --stack-name <repo-name>-github-role --template-body file://github-iam-role-template.yaml --capabilities CAPABILITY_NAMED_IAM
+# 5. Deploy with: aws cloudformation create-stack --stack-name github-role-for-<repo-name> --template-body file://github-iam-role-template.yaml --capabilities CAPABILITY_NAMED_IAM
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -21,24 +21,24 @@ Metadata:
           default: Repository Configuration
         Parameters:
           - Organization
-          - RepositoryName
+          - ProjectName
           - Environment
       - Label:
           default: Infrastructure References
         Parameters:
           - OIDCProviderStackName
-          - SSMParameterReadPolicyName
+          - TerraformAccessPolicyAccountID
     ParameterLabels:
       Organization:
         default: GitHub Organization
-      RepositoryName:
+      ProjectName:
         default: Repository Name
       Environment:
         default: Environment
       OIDCProviderStackName:
         default: OIDC Provider Stack Name
-      SSMParameterReadPolicyName:
-        default: SSM Parameter Read Policy Name
+      TerraformAccessPolicyAccountID:
+        default: Terraform Access Policy Account ID
 
 Parameters:
   Organization:
@@ -50,7 +50,7 @@ Parameters:
     AllowedPattern: ^[a-z0-9-]+$
     ConstraintDescription: Must be lowercase alphanumeric with hyphens only
   
-  RepositoryName:
+  ProjectName:
     Type: String
     Description: Name of the GitHub repository (change this when copying to another repo)
     Default: my-app-repository
@@ -73,10 +73,9 @@ Parameters:
     Description: Name of the stack that deployed the GitHub OIDC provider
     Default: github-identity-provider
   
-  SSMParameterReadPolicyName:
+  TerraformAccessPolicyAccountID:
     Type: String
-    Description: Name of the SSM parameter read managed policy (from terraform-core-aws stack)
-    Default: terraform-core-aws-ssm-read-dev
+    Description: The account ID for Terraform access managed policy (from terraform-core-aws stack)
 
 Resources:
   # IAM role for GitHub Actions (repository-specific)
@@ -96,12 +95,12 @@ Resources:
             Action: sts:AssumeRoleWithWebIdentity
             Condition:
               StringLike:
-                token.actions.githubusercontent.com:sub: !Sub 'repo:${Organization}/${RepositoryName}:*'
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${Organization}/${ProjectName}:*'
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
       ManagedPolicyArns:
         # REQUIRED: SSM parameter read policy to retrieve Terraform backend configuration
-        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/${SSMParameterReadPolicyName}'
+        - !Sub 'arn:aws:iam::${TerraformAccessPolicyAccountID}:policy/terraform-core-aws-tf-access-dev'
         # ADD YOUR APPLICATION-SPECIFIC MANAGED POLICIES BELOW
         # Examples:
         # - arn:aws:iam::aws:policy/ReadOnlyAccess
@@ -118,18 +117,21 @@ Resources:
       #             - s3:PutObject
       #           Resource: !Sub 'arn:aws:s3:::my-bucket/*'
       Tags:
+        - Key: Project
+          Value: !Ref ProjectName
         - Key: Organization
           Value: !Ref Organization
-        - Key: Repository
-          Value: !Ref RepositoryName
         - Key: Environment
           Value: !Ref Environment
         - Key: RepositoryURL
-          Value: !Sub 'https://github.com/${Organization}/${RepositoryName}'
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
         - Key: Automation
           Value: CloudFormation
+        - Key: RepositoryPath
+          Value: cloudformation/templates
         - Key: RepositoryFile
           Value: github-iam-role.yaml
         - Key: Description
-          Value: !Sub 'IAM role for GitHub Actions in ${Organization}/${RepositoryName}'
-
+          Value: !Sub 'IAM role for GitHub Actions in ${Organization}/${ProjectName}'
+        - Key: Region
+          Value: !Ref 'AWS::Region'

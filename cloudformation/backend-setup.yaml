@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Terraform State Management Infrastructure - Core resources (S3, IAM, and SSM in a single stack)'
 
-# Stack Name: terraform-core-allinone
+# Stack Name: terraform-core-backend-setup
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -12,6 +12,7 @@ Metadata:
           - ProjectName
           - Organization
           - Environment
+          - AllowedAssumeRoleAccountIDs
     ParameterLabels:
       ProjectName:
         default: Project Name
@@ -19,6 +20,8 @@ Metadata:
         default: Organization Name
       Environment:
         default: Environment/Workspace
+      AllowedAssumeRoleAccountIDs:
+        default: Comma-separated list of Account IDs allowed to assume the Terraform state role
 
 Parameters:
   ProjectName:
@@ -47,6 +50,13 @@ Parameters:
       - stg
       - prod
     Default: dev
+
+  AllowedAssumeRoleAccountIDs:
+    Type: CommaDelimitedList
+    Description: >-
+      Comma-separated list of Account IDs allowed to assume the
+      Terraform state role (for example: 123456789012,123456789013). Each
+      account ID will allow any principal in that account to assume the role.
 
 Resources:
   # S3 bucket for Terraform state files
@@ -84,13 +94,15 @@ Resources:
         - Key: Automation
           Value: CloudFormation
         - Key: RepositoryPath
-          Value: '.'
+          Value: cloudformation
         - Key: RepositoryFile
-          Value: cloudformation/terraform-core-allinone.yaml
+          Value: backend-setup.yaml
         - Key: Name
           Value: !Sub '${ProjectName}-state-files-${Environment}'
         - Key: Description
           Value: S3 bucket for storing Terraform state files
+        - Key: Region
+          Value: !Ref 'AWS::Region'
 
   # IAM role for Terraform state access
   TerraformStateRole:
@@ -101,7 +113,13 @@ Resources:
         Statement:
           - Effect: Allow
             Principal:
-              AWS: !Ref AWS::AccountId
+              AWS: !Split
+                - ","
+                - !Sub
+                  - "arn:aws:iam::${JoinedAccounts}:root"
+                  - JoinedAccounts: !Join
+                      - ":root,arn:aws:iam::"
+                      - !Ref AllowedAssumeRoleAccountIDs
             Action: sts:AssumeRole
       Policies:
         - PolicyName: terraform-state-files-inline-policy
@@ -132,55 +150,10 @@ Resources:
         - Key: Automation
           Value: CloudFormation
         - Key: RepositoryPath
-          Value: '.'
+          Value: cloudformation
         - Key: RepositoryFile
-          Value: cloudformation/terraform-core-allinone.yaml
+          Value: backend-setup.yaml
         - Key: Description
           Value: IAM role for accessing Terraform state files
-
-  # Standalone IAM managed policy for SSM parameter read access
-  SSMParameterReadPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      ManagedPolicyName: !Sub '${ProjectName}-ssm-read-${Environment}'
-      Description: Allows read access to Terraform backend configuration SSM parameter
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: ReadBackendConfiguration
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-              - ssm:GetParameters
-            Resource: !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/terraform-core-aws/${Environment}/backend_configuration_hcl'
-
-  # SSM parameter for backend configuration
-  BackendConfigurationParameter:
-    Type: AWS::SSM::Parameter
-    Properties:
-      Name: !Sub '/${ProjectName}/${Environment}/backend_configuration_hcl'
-      Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
-      Type: String
-      Value: !Sub |
-        terraform {
-          backend "s3" {
-            bucket        = "${TerraformStateBucket}"
-            key           = "CHANGE_ME/terraform.tfstate"
-            region        = "${AWS::Region}"
-            assume_role = {
-              role_arn      = "${TerraformStateRole.Arn}"
-            }
-            encrypt       = true
-            use_lockfile  = true
-          }
-        }
-      Tags:
-        Project: !Ref ProjectName
-        Organization: !Ref Organization
-        Environment: !Ref Environment
-        RepositoryURL: !Sub 'https://github.com/${Organization}/${ProjectName}'
-        Automation: CloudFormation
-        RepositoryPath: '.'
-        RepositoryFile: cloudformation/terraform-core-allinone.yaml
-        Name: !Sub '/${ProjectName}/${Environment}/backend_configuration_hcl'
-        Description: Backend configuration in HCL format for copy-paste into other Terraform configurations
+        - Key: Region
+          Value: !Ref 'AWS::Region'

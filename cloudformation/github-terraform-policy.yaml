@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Creates an IAM managed policy for GitHub Actions (OIDC) workflows that grants read access to the Terraform backend configuration and permission to assume the Terraform state role.'
+
+# Stack Name: terraform-core-github-terraform-policy
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+        - Label:
+            default: Project Configuration
+          Parameters:
+            - ProjectName
+            - Organization
+            - Environment
+            - TerraformCentralAccountID
+            - TerraformRoleName
+    ParameterLabels:
+      ProjectName:
+        default: Project Name
+      Organization:
+        default: Organization Name
+      Environment:
+        default: Environment/Workspace
+      TerraformCentralAccountID:
+        default: Terraform Central Account ID
+      TerraformRoleName:
+        default: Terraform State IAM Role Name
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Name of the project
+    Default: terraform-core-aws
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+  
+  Organization:
+    Type: String
+    Description: Name of the organization
+    Default: faccomichele
+    MinLength: 1
+    MaxLength: 63
+    AllowedPattern: ^[a-z0-9-]+$
+    ConstraintDescription: Must be lowercase alphanumeric with hyphens only
+
+  Environment:
+    Type: String
+    Description: Environment/Workspace (dev, stg, prod)
+    AllowedValues:
+      - dev
+      - stg
+      - prod
+    Default: dev
+
+  TerraformCentralAccountID:
+    Type: String
+    Description: AWS Account ID where the Terraform state IAM role is defined
+    MinLength: 12
+    MaxLength: 12
+    AllowedPattern: '^[0-9]{12}$'
+    ConstraintDescription: Must be a valid 12-digit AWS Account ID
+
+  TerraformRoleName:
+    Type: String
+    Description: Name of the IAM role to be assumed by Terraform for state access
+    MinLength: 1
+    MaxLength: 64
+    ConstraintDescription: Must be a valid IAM Role name
+
+Resources:
+  # Standalone IAM managed policy for SSM parameter read access
+  TerraformStateFileAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${ProjectName}-tf-access-${Environment}'
+      Description: Allows access to Terraform backend configuration
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AssumeRoleTerraformStateRole
+            Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Resource: !Sub 'arn:aws:iam::${TerraformCentralAccountID}:role/${TerraformRoleName}'
