@@ -77,6 +77,16 @@ Parameters:
     Type: String
     Description: The account ID for Terraform access managed policy (from terraform-core-aws stack)
 
+# Mapping from lower to upper as CFT does not have intrinsic functions for string case conversion
+Mappings:
+  EnvironmentMap:
+    dev:
+      Upper: DEV
+    stg:
+      Upper: STG
+    prod:
+      Upper: PROD
+
 Resources:
   # IAM role for GitHub Actions (repository-specific)
   GitHubActionsRole:
@@ -138,13 +148,19 @@ Resources:
 
 Outputs:
   AwsId:
-    Value: !Sub '${Environment}_AWS_ID = ${AWS::AccountId}'
+    Value:
+      Fn::Join:
+        - ''
+        - - !FindInMap [EnvironmentMap, !Ref Environment, Upper]
+          - '_AWS_ID = '
+          - !Ref 'AWS::AccountId'
   RoleSecret:
     Value:
-      Fn::Sub:
-        - '${Environment}_ROLE_SECRET = ${SecretValue}'
-        - SecretValue:
-            Fn::Select:
+      Fn::Join:
+        - ''
+        - - !FindInMap [EnvironmentMap, !Ref Environment, Upper]
+          - '_ROLE_SECRET = '
+          - Fn::Select:
               - 7
               - Fn::Split:
                   - "-"
