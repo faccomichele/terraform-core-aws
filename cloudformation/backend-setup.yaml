@@ -157,3 +157,17 @@ Resources:
           Value: IAM role for accessing Terraform state files
         - Key: Region
           Value: !Ref 'AWS::Region'
+
+Outputs:
+  AwsId:
+    Value: !Sub 'CORE_TERRAFORM_ACCOUNT = ${AWS::AccountId}'
+  RoleSecret:
+    Value:
+      Fn::Sub:
+        - 'CORE_TERRAFORM_ROLE_SECRET = ${SecretValue}'
+        - SecretValue:
+            Fn::Select:
+              - 5
+              - Fn::Split:
+                  - "-"
+                  - !GetAtt TerraformStateRole.Arn

@@ -135,3 +135,17 @@ Resources:
           Value: !Sub 'IAM role for GitHub Actions in ${Organization}/${ProjectName}'
         - Key: Region
           Value: !Ref 'AWS::Region'
+
+Outputs:
+  AwsId:
+    Value: !Sub '${Environment}_AWS_ID = ${AWS::AccountId}'
+  RoleSecret:
+    Value:
+      Fn::Sub:
+        - '${Environment}_ROLE_SECRET = ${SecretValue}'
+        - SecretValue:
+            Fn::Select:
+              - 7
+              - Fn::Split:
+                  - "-"
+                  - !GetAtt GitHubActionsRole.Arn
