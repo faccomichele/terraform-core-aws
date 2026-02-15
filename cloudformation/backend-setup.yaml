@@ -1,7 +1,9 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Terraform State Management Infrastructure - Core resources (S3, IAM, and SSM in a single stack)'
 
-# Stack Name: terraform-core-backend-setup
+# Stack Name: terraform-core-backend-setup-${Environment}
+# Deploy this stack only in the central account and once for each environment
+# This stack needs to be updated every time a new account is added
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -160,14 +162,14 @@ Resources:
 
 Outputs:
   AwsId:
-    Value: !Sub 'CORE_TERRAFORM_ACCOUNT = ${AWS::AccountId}'
+    Value: !Sub '/manual/global/central-account/account-id = ${AWS::AccountId}'
   RoleSecret:
     Value:
       Fn::Sub:
-        - 'CORE_TERRAFORM_ROLE_SECRET = ${SecretValue}'
+        - '/manual/${Environment}/terraform/state-file/role-secret = ${SecretValue}'
         - SecretValue:
             Fn::Select:
-              - 5
+              - 6
               - Fn::Split:
                   - "-"
                   - !GetAtt TerraformStateRole.Arn

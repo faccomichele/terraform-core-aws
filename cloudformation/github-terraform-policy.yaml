@@ -1,7 +1,8 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'Creates an IAM managed policy for GitHub Actions (OIDC) workflows that grants read access to the Terraform backend configuration and permission to assume the Terraform state role.'
 
-# Stack Name: terraform-core-github-terraform-policy
+# Stack Name: terraform-core-github-terraform-policy-${Environment}
+# Deploy this stack once for account/environment combination
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -12,8 +13,6 @@ Metadata:
             - ProjectName
             - Organization
             - Environment
-            - TerraformCentralAccountID
-            - TerraformRoleName
     ParameterLabels:
       ProjectName:
         default: Project Name
@@ -21,10 +20,6 @@ Metadata:
         default: Organization Name
       Environment:
         default: Environment/Workspace
-      TerraformCentralAccountID:
-        default: Terraform Central Account ID
-      TerraformRoleName:
-        default: Terraform State IAM Role Name
 
 Parameters:
   ProjectName:
@@ -54,21 +49,6 @@ Parameters:
       - prod
     Default: dev
 
-  TerraformCentralAccountID:
-    Type: String
-    Description: AWS Account ID where the Terraform state IAM role is defined
-    MinLength: 12
-    MaxLength: 12
-    AllowedPattern: '^[0-9]{12}$'
-    ConstraintDescription: Must be a valid 12-digit AWS Account ID
-
-  TerraformRoleName:
-    Type: String
-    Description: Name of the IAM role to be assumed by Terraform for state access
-    MinLength: 1
-    MaxLength: 64
-    ConstraintDescription: Must be a valid IAM Role name
-
 Resources:
   # Standalone IAM managed policy for SSM parameter read access
   TerraformStateFileAccessPolicy:
@@ -83,4 +63,4 @@ Resources:
             Effect: Allow
             Action:
               - sts:AssumeRole
-            Resource: !Sub 'arn:aws:iam::${TerraformCentralAccountID}:role/${TerraformRoleName}'
+            Resource: !Sub 'arn:aws:iam::{{resolve:ssm:/manual/global/central-account/account-id}}:role/terraform-core-backend-setup-${Environment}-TerraformStateRole-{{resolve:ssm:/manual/global/terraform/state-file/role-secret}}'

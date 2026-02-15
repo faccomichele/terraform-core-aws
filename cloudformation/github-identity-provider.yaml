@@ -2,6 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: 'GitHub Actions OIDC Identity Provider - Enables secure, keyless authentication for GitHub Actions workflows'
 
 # Stack Name: terraform-core-github-identity-provider
+# Deploy this stack once per account
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -57,7 +58,7 @@ Resources:
         - Key: Automation
           Value: CloudFormation
         - Key: RepositoryPath
-          Value: 'cloudformation'
+          Value: cloudformation
         - Key: RepositoryFile
           Value: github-identity-provider.yaml
         - Key: Name

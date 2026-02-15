@@ -1,18 +1,15 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'GitHub Actions IAM Role - Template for deploying repository-specific GitHub Actions roles that assume the shared OIDC provider'
 
-# Stack Name: github-role-for-<repo-name>
+# Stack Name: github-role-for-<repo-name>-${Environment}
 
 # DEPLOYMENT INSTRUCTIONS:
-# PREREQUISITE: The GitHub OIDC provider must be deployed first using the github-identity-provider.yaml template.
-#               This creates the shared OIDC provider that this role will reference.
-#               Deploy it with stack name 'github-identity-provider' (or update OIDCProviderStackName parameter below).
-# 
 # 1. Copy this template to your target repository
 # 2. Update the ProjectName parameter default to match your repository name
 # 3. Optionally adjust Environment parameter if needed
 # 4. Add additional managed policies or inline policies as required for your application
-# 5. Deploy with: aws cloudformation create-stack --stack-name github-role-for-<repo-name> --template-body file://github-iam-role-template.yaml --capabilities CAPABILITY_NAMED_IAM
+# 5. Deploy with: aws cloudformation create-stack --stack-name github-role-for-<repo-name>-${Environment} --template-body file://github-iam-role-template.yaml --capabilities CAPABILITY_NAMED_IAM
+# 6. Set the outputs as GitHub Actions secrets in your repository (e.g., ${Environment}_AWS_ID, ${Environment}_ROLE_SECRET) for use in your workflows
 
 Metadata:
   AWS::CloudFormation::Interface:
@@ -23,10 +20,6 @@ Metadata:
           - Organization
           - ProjectName
           - Environment
-      - Label:
-          default: Infrastructure References
-        Parameters:
-          - OIDCProviderStackName
     ParameterLabels:
       Organization:
         default: GitHub Organization
@@ -34,8 +27,6 @@ Metadata:
         default: Repository Name
       Environment:
         default: Environment
-      OIDCProviderStackName:
-        default: OIDC Provider Stack Name
 
 Parameters:
   Organization:
@@ -64,11 +55,6 @@ Parameters:
       - stg
       - prod
     Default: dev
-  
-  OIDCProviderStackName:
-    Type: String
-    Description: Name of the stack that deployed the GitHub OIDC provider
-    Default: github-identity-provider
 
 # Mapping from lower to upper as CFT does not have intrinsic functions for string case conversion
 Mappings:
@@ -103,7 +89,7 @@ Resources:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
       ManagedPolicyArns:
         # REQUIRED: SSM parameter read policy to retrieve Terraform backend configuration
-        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/terraform-core-aws-tf-access-dev'
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/terraform-core-aws-tf-access-${Environment}'
         # ADD YOUR APPLICATION-SPECIFIC MANAGED POLICIES BELOW
         # Examples:
         # - arn:aws:iam::aws:policy/ReadOnlyAccess
@@ -154,7 +140,7 @@ Outputs:
         - - !FindInMap [EnvironmentMap, !Ref Environment, Upper]
           - '_ROLE_SECRET = '
           - Fn::Select:
-              - 7
+              - 8
               - Fn::Split:
                   - "-"
                   - !GetAtt GitHubActionsRole.Arn
