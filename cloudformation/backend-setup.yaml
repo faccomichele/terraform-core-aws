@@ -123,8 +123,6 @@ Resources:
                       - ":root,arn:aws:iam::"
                       - !Ref AllowedAssumeRoleAccountIDs
             Action: sts:AssumeRole
-      ManagedPolicyArns:
-        - !Ref SSMParameterReadPolicy
       Policies:
         - PolicyName: terraform-state-files-inline-policy
           PolicyDocument:
