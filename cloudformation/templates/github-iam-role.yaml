@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: 'GitHub Actions IAM Role - Template for deploying repository-specific GitHub Actions roles that assume the shared OIDC provider'
 
-# Stack Name: github-role-for-<repo-name>-${Environment}
+# Stack Name: gha-role-for-<repo-name>-${Environment}
 
 # DEPLOYMENT INSTRUCTIONS:
 # 1. Copy this template to your target repository
