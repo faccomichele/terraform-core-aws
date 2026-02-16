@@ -62,6 +62,7 @@ Parameters:
 
 Resources:
   # Managed policy for SSM Parameter Store access
+  # Grants access across all regions (*) to support multi-region Terraform deployments
   SSMParameterReadPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
