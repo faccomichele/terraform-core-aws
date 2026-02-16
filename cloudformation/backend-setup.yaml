@@ -78,7 +78,7 @@ Resources:
               - ssm:GetParameters
             Resource:
               - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/${Environment}/terraform/state-file/role-secret'
-              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/global/account-id'
+              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/global/central-account/account-id'
 
   # S3 bucket for Terraform state files
   TerraformStateBucket:
