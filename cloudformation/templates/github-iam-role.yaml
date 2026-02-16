@@ -90,6 +90,7 @@ Resources:
       ManagedPolicyArns:
         # REQUIRED: SSM parameter read policy to retrieve Terraform backend configuration
         - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/terraform-core-aws-tf-access-${Environment}'
+        - !Sub 'arn:aws:iam::${AWS::AccountId}:policy/terraform-core-aws-ssm-read-${Environment}'
         # ADD YOUR APPLICATION-SPECIFIC MANAGED POLICIES BELOW
         # Examples:
         # - arn:aws:iam::aws:policy/ReadOnlyAccess
