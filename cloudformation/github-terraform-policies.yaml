@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: '2010-09-09'
-Description: 'Creates an IAM managed policy for GitHub Actions (OIDC) workflows that grants read access to the Terraform backend configuration and permission to assume the Terraform state role.'
+Description: 'Creates an IAM managed policies for GitHub Actions (OIDC) workflows that grants read access to the Terraform backend configuration and permission to assume the Terraform state role.'
 
-# Stack Name: terraform-core-github-terraform-policy-${Environment}
+# Stack Name: terraform-core-github-terraform-policies-${Environment}
 # Deploy this stack once for account/environment combination
 
 Metadata:
@@ -64,3 +64,22 @@ Resources:
             Action:
               - sts:AssumeRole
             Resource: !Sub 'arn:aws:iam::{{resolve:ssm:/manual/global/central-account/account-id}}:role/terraform-core-backend-setup-${Environment}-TerraformStateRole-{{resolve:ssm:/manual/global/terraform/state-file/role-secret}}'
+
+    # Managed policy for SSM Parameter Store access
+  # Grants access across all regions (*) to support multi-region Terraform deployments
+  SSMParameterReadPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${ProjectName}-ssm-read-${Environment}'
+      Description: Grants read access to SSM parameters for Terraform state configuration
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: SSMParameterRead
+            Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+            Resource:
+              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/${Environment}/terraform/state-file/role-secret'
+              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/global/central-account/account-id'

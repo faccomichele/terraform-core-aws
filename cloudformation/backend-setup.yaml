@@ -61,25 +61,6 @@ Parameters:
       account ID will allow any principal in that account to assume the role.
 
 Resources:
-  # Managed policy for SSM Parameter Store access
-  # Grants access across all regions (*) to support multi-region Terraform deployments
-  SSMParameterReadPolicy:
-    Type: AWS::IAM::ManagedPolicy
-    Properties:
-      ManagedPolicyName: !Sub '${ProjectName}-ssm-read-${Environment}'
-      Description: Grants read access to SSM parameters for Terraform state configuration
-      PolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Sid: SSMParameterRead
-            Effect: Allow
-            Action:
-              - ssm:GetParameter
-              - ssm:GetParameters
-            Resource:
-              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/${Environment}/terraform/state-file/role-secret'
-              - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/global/central-account/account-id'
-
   # S3 bucket for Terraform state files
   TerraformStateBucket:
     Type: AWS::S3::Bucket
