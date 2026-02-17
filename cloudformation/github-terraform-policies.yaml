@@ -63,7 +63,7 @@ Resources:
             Effect: Allow
             Action:
               - sts:AssumeRole
-            Resource: !Sub 'arn:aws:iam::{{resolve:ssm:/manual/global/central-account/account-id}}:role/terraform-core-backend-setup-${Environment}-TerraformStateRole-{{resolve:ssm:/manual/global/terraform/state-file/role-secret}}'
+            Resource: !Sub 'arn:aws:iam::{{resolve:ssm:/manual/global/central-account/account-id}}:role/terraform-core-backend-setup-${Environment}-TerraformStateRole-{{resolve:ssm:/manual/${Environment}/terraform/state-file/role-secret}}'
 
     # Managed policy for SSM Parameter Store access
   # Grants access across all regions (*) to support multi-region Terraform deployments
