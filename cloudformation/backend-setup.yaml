@@ -107,7 +107,7 @@ Resources:
           Value: !Ref 'AWS::Region'
 
   # IAM role for Terraform state access
-  TerraformStateRole:
+  TfStateRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -172,4 +172,4 @@ Outputs:
               - 6
               - Fn::Split:
                   - "-"
-                  - !GetAtt TerraformStateRole.Arn
+                  - !GetAtt TfStateRole.Arn
