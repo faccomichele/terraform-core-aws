@@ -60,6 +60,9 @@ Parameters:
       Terraform state role (for example: 123456789012,123456789013). Each
       account ID will allow any principal in that account to assume the role.
 
+Conditions:
+  IsProd: !Equals [!Ref Environment, prod]
+
 Resources:
   # S3 bucket for Terraform state files
   TerraformStateBucket:
@@ -83,7 +86,10 @@ Resources:
           - Id: terraform-state-files-lifecycle
             Status: Enabled
             NoncurrentVersionExpiration:
-              NoncurrentDays: 30
+              NoncurrentDays: !If
+                - IsProd
+                - 30
+                - 7
       Tags:
         - Key: Project
           Value: !Ref ProjectName
@@ -160,9 +166,104 @@ Resources:
         - Key: Region
           Value: !Ref 'AWS::Region'
 
+  # S3 bucket for shared files accessible by the allowed accounts
+  SharedArtifactsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${ProjectName}-shared-artifacts-${Environment}-${AWS::AccountId}'
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+            BucketKeyEnabled: true
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: shared-files-lifecycle
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: !If
+                - IsProd
+                - 30
+                - 7
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 2
+            ExpirationInDays: !If
+              - IsProd
+              - 1828
+              - 367
+      Tags:
+        - Key: Project
+          Value: !Ref ProjectName
+        - Key: Organization
+          Value: !Ref Organization
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: RepositoryURL
+          Value: !Sub 'https://github.com/${Organization}/${ProjectName}'
+        - Key: Automation
+          Value: CloudFormation
+        - Key: RepositoryPath
+          Value: cloudformation
+        - Key: RepositoryFile
+          Value: backend-setup.yaml
+        - Key: Name
+          Value: !Sub '${ProjectName}-shared-artifacts-${Environment}'
+        - Key: Description
+          Value: Private S3 bucket for shared artifacts accessible by allowed accounts
+        - Key: Region
+          Value: !Ref 'AWS::Region'
+
+  # Bucket policy granting get/put/delete/list to any principal in the allowed accounts
+  SharedArtifactsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref SharedArtifactsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: AllowAccountsListBucket
+            Effect: Allow
+            Principal:
+              AWS: !Split
+                - ","
+                - !Sub
+                  - "arn:aws:iam::${JoinedAccounts}:root"
+                  - JoinedAccounts: !Join
+                      - ":root,arn:aws:iam::"
+                      - !Ref AllowedAssumeRoleAccountIDs
+            Action:
+              - s3:ListBucket
+            Resource: !GetAtt SharedArtifactsBucket.Arn
+          - Sid: AllowAccountsObjectActions
+            Effect: Allow
+            Principal:
+              AWS: !Split
+                - ","
+                - !Sub
+                  - "arn:aws:iam::${JoinedAccounts}:root"
+                  - JoinedAccounts: !Join
+                      - ":root,arn:aws:iam::"
+                      - !Ref AllowedAssumeRoleAccountIDs
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+            Resource: !Sub '${SharedArtifactsBucket.Arn}/*'
+
 Outputs:
   AwsId:
     Value: !Sub '/manual/global/central-account/account-id = ${AWS::AccountId}'
+    Description: SSM parameter value to be manually configured for assuming the Terraform state role
+  SharedArtifactsBucketName:
+    Value: !Ref SharedArtifactsBucket
+    Description: Name of the shared artifacts S3 bucket
   RoleSecret:
     Value:
       Fn::Sub:
@@ -173,3 +274,4 @@ Outputs:
               - Fn::Split:
                   - "-"
                   - !GetAtt TfStateRole.Arn
+    Description: SSM parameter value to be manually configured for assuming the Terraform state role

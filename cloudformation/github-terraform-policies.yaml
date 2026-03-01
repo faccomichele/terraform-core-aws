@@ -50,7 +50,7 @@ Parameters:
     Default: dev
 
 Resources:
-  # Standalone IAM managed policy for SSM parameter read access
+  # Standalone IAM managed policy for Assume Role Terraform state role access
   TerraformStateFileAccessPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -65,8 +65,7 @@ Resources:
               - sts:AssumeRole
             Resource: !Sub 'arn:aws:iam::{{resolve:ssm:/manual/global/central-account/account-id}}:role/terraform-core-backend-setup-${Environment}-TfStateRole-{{resolve:ssm:/manual/${Environment}/terraform/state-file/role-secret}}'
 
-    # Managed policy for SSM Parameter Store access
-  # Grants access across all regions (*) to support multi-region Terraform deployments
+  # Standalone IAM managed policy for SSM parameter read access
   SSMParameterReadPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
@@ -83,3 +82,23 @@ Resources:
             Resource:
               - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/${Environment}/terraform/state-file/role-secret'
               - !Sub 'arn:aws:ssm:*:${AWS::AccountId}:parameter/manual/global/central-account/account-id'
+
+  # Standalone IAM managed policy for S3 artifacts access
+  S3ArtifactsAccessPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub '${ProjectName}-s3-artifacts-access-${Environment}'
+      Description: Grants access to S3 artifacts for Terraform state configuration
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: S3ArtifactsAccess
+            Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:PutObject
+              - s3:DeleteObject
+              - s3:List*
+            Resource:
+              - !Sub 'arn:aws:s3:::${ProjectName}-shared-artifacts-${Environment}-{{resolve:ssm:/manual/global/central-account/account-id}}/*'
+              - !Sub 'arn:aws:s3:::${ProjectName}-shared-artifacts-${Environment}-{{resolve:ssm:/manual/global/central-account/account-id}}'
